@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "766294687630",
+    "project_id": "mapapp-a89b7",
+    "storage_bucket": "mapapp-a89b7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:766294687630:android:0fea39456d91146963eedf",
+        "android_client_info": {
+          "package_name": "com.example.tanlam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOjwetqyIFtvLD3rJ7A3fv8tlETqr1uuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
