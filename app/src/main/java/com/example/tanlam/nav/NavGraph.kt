@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.tanlam.controller.viewmodel.DataViewModel
+import com.example.tanlam.data.Book
 import com.example.tanlam.ui.screens.login.SelectScreen
 import com.example.tanlam.ui.screens.login.SignupScreen
 import com.example.tanlam.ui.screens.login.StartScreen
@@ -72,8 +73,40 @@ fun NavGraph(
             BookScreen(navController = navController)
         }
 
-        composable(route = Screens.DetailScreen.route) {
-            DetailScreen(navController = navController)
+        composable(
+            route = "${Screens.DetailScreen.route}/{nameTruck}/{price}/{typeRoom}/{km}",
+            arguments = listOf(
+                navArgument("nameTruck") {
+                    type = NavType.StringType
+                },
+                navArgument("price") {
+                    type = NavType.StringType
+                },
+                navArgument("typeRoom") {
+                    type = NavType.StringType
+                },
+                navArgument("km") {
+                    type = NavType.StringType
+                }
+            )
+        ) {
+            val truck = it.arguments?.getString("nameTruck").toString()
+            val price = it.arguments?.getString("price").toString()
+            val typeRoom = it.arguments?.getString("typeRoom").toString()
+            val km = it.arguments?.getString("km").toString()
+
+            val book = Book(
+                truck,
+                price,
+                typeRoom,
+                km
+            )
+
+            DetailScreen(
+                book = book,
+                dataViewModel = dataViewModel,
+                navController = navController
+            )
         }
     }
 }

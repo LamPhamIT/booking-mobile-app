@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.tanlam.R
+import com.example.tanlam.data.Book
 import com.example.tanlam.mapUI
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.theme.MainGreen
@@ -45,6 +46,10 @@ fun BookScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    val km = 5.5
+    var totalPrice by remember { mutableStateOf(0.0) }
+
+
     val context = LocalContext.current
     Box(
         modifier = modifier
@@ -151,15 +156,20 @@ fun BookScreen(
 
                 // Truck
                 var isSelectedSmallTruck by remember { mutableStateOf(true) }
+                var typeOfTruck by remember { mutableStateOf("") }
                 var colorBackGroundTruck by remember { mutableStateOf(Color(239, 249, 250)) }
                 var colorBackGroundContainer by remember { mutableStateOf(Color.White) }
 
                 if (isSelectedSmallTruck) {
                     colorBackGroundTruck = Color(239, 249, 250)
                     colorBackGroundContainer = Color.White
+                    typeOfTruck = "Small truck (1000kg - 5000kg)"
+                    totalPrice = 50000 * km
                 } else {
                     colorBackGroundTruck = Color.White
                     colorBackGroundContainer = Color(239, 249, 250)
+                    typeOfTruck = "Large truck (5000kg - 10000kg)"
+                    totalPrice = 100000 * km
                 }
                 Column(
                     modifier = Modifier
@@ -193,7 +203,7 @@ fun BookScreen(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = "300.000đ/5km",
+                                text = "${km * 50000}đ/${km}km",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
@@ -235,7 +245,7 @@ fun BookScreen(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = "600.000đ/5km", fontWeight = FontWeight.Bold,
+                                text = "${km * 100000}đ/${km}km", fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
                         }
@@ -243,12 +253,14 @@ fun BookScreen(
                 }
 
 
-                //Type
+                //TypeRoom
                 var isSelectedRoom by remember { mutableStateOf(true) }
                 var colorBackGroundRoom by remember { mutableStateOf(MainGreen) }
                 var colorBackGroundHome by remember { mutableStateOf(Color.White) }
                 var colorTextRoom by remember { mutableStateOf(MainGreen) }
                 var colorTextHome by remember { mutableStateOf(Color.White) }
+
+                var typeOfPlace by remember { mutableStateOf("") }
 
                 if (isSelectedRoom) {
                     colorBackGroundRoom = MainGreen
@@ -256,12 +268,16 @@ fun BookScreen(
 
                     colorTextRoom = Color.White
                     colorTextHome = Color(106, 100, 100)
+
+                    typeOfPlace = "Room"
                 } else {
                     colorBackGroundRoom = Color.White
                     colorBackGroundHome = MainGreen
 
                     colorTextRoom = Color(106, 100, 100)
                     colorTextHome = Color.White
+
+                    typeOfPlace = "Entire home"
                 }
 
                 Column(
@@ -329,7 +345,7 @@ fun BookScreen(
                         title = "Book",
                         greenBackground = true,
                         onClickButton = {
-                            navController.navigate(Screens.DetailScreen.route)
+                            navController.navigate("${Screens.DetailScreen.route}/$typeOfTruck/$totalPrice/$typeOfPlace/$km")
                         },
                         modifier = Modifier.fillMaxWidth()
                     )

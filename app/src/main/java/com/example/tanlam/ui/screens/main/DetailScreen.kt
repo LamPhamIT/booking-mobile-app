@@ -32,14 +32,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.tanlam.R
+import com.example.tanlam.common.isEmptyString
+import com.example.tanlam.common.isValidEmail
+import com.example.tanlam.controller.collection.Collections
+import com.example.tanlam.controller.viewmodel.DataViewModel
+import com.example.tanlam.data.Book
+import com.example.tanlam.data.Order
+import com.example.tanlam.data.UserInformation
 import com.example.tanlam.ui.ingredients.ButtonCustom
 import com.example.tanlam.ui.ingredients.TextFieldCustom
 
 @Composable
 fun DetailScreen(
+    book: Book,
+    dataViewModel: DataViewModel,
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    var typeOfPayment by remember { mutableStateOf("") }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -140,10 +151,12 @@ fun DetailScreen(
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(20.dp))
-                    Text(text = "Small truck (1000kg - 5000kg)", fontSize = 12.sp)
+                    Text(text = book.nameTruck, fontSize = 12.sp)
                 }
             }
 
+
+            //Payment
 
             var isPayLater by remember { mutableStateOf(true) }
             var payLaterIcon by remember { mutableStateOf(0) }
@@ -152,11 +165,12 @@ fun DetailScreen(
             if (isPayLater == false) {
                 payLaterIcon = R.drawable.unselected_icon
                 payVNPAY = R.drawable.selectedicon
+                typeOfPayment = "Pay later"
             }else {
                 payLaterIcon = R.drawable.selectedicon
                 payVNPAY = R.drawable.unselected_icon
+                typeOfPayment = "Pay by VNPAY"
             }
-            //Payment
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -229,15 +243,32 @@ fun DetailScreen(
                             modifier = Modifier.size(35.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "5Km", fontWeight = FontWeight.ExtraBold)
+                        Text(text = "${book.km}Km", fontWeight = FontWeight.ExtraBold)
                     }
 
-                    Text(text = "300.000đ", fontWeight = FontWeight.ExtraBold)
+                    Text(text = "${book.price}đ", fontWeight = FontWeight.ExtraBold)
                 }
             }
         }
 
         //User information
+        var email by remember { mutableStateOf("") }
+        var firstName by remember { mutableStateOf("") }
+        var name by remember { mutableStateOf("") }
+        var phone by remember { mutableStateOf("") }
+        var error by remember { mutableStateOf("") }
+
+        var orderList by remember { mutableStateOf(emptyList<Order>()) }
+        var idOrder by remember { mutableStateOf(0) }
+        dataViewModel.getAllOrder {
+            orderList = it
+        }
+        for(i in orderList) {
+            if(i.id > idOrder) {
+                idOrder = i.id
+            }
+        }
+
         Column(
             modifier = Modifier
                 .weight(6f)
@@ -260,13 +291,14 @@ fun DetailScreen(
                     title = "Email",
                     isPassWord = false,
                     onChangeValue = {
-
+                        email = it
                     },
                     isNumber = false,
                     modifier = Modifier
                         .height(40.dp)
                         .fillMaxWidth()
                 )
+
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -274,7 +306,7 @@ fun DetailScreen(
                         title = "First name",
                         isPassWord = false,
                         onChangeValue = {
-
+                            firstName = it
                         },
                         isNumber = false,
                         modifier = Modifier
@@ -289,7 +321,7 @@ fun DetailScreen(
                         title = "Name",
                         isPassWord = false,
                         onChangeValue = {
-
+                            name = it
                         },
                         isNumber = false,
                         modifier = Modifier
@@ -303,12 +335,18 @@ fun DetailScreen(
                     title = "Phone",
                     isPassWord = false,
                     onChangeValue = {
-
+                        phone = it
                     },
                     isNumber = true,
                     modifier = Modifier
                         .height(40.dp)
                         .fillMaxWidth()
+                )
+
+                Text(
+                    text = error,
+                    fontSize = 12.sp,
+                    color = Color.Red
                 )
             }
 
@@ -323,7 +361,7 @@ fun DetailScreen(
                 ) {
                     Text(text = "Total price")
                     Text(
-                        text = "300.000đ",
+                        text = "${book.price}đ",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 19.sp
                     )
@@ -335,7 +373,32 @@ fun DetailScreen(
                     title = "Place your order",
                     greenBackground = true,
                     modifier = Modifier.fillMaxWidth(),
-                    onClickButton = { /*TODO*/ }
+                    onClickButton = {
+                        if (!isValidEmail(email)) {
+                            error = "Error email"
+                        } else if (isEmptyString(firstName)) {
+                            error = "invalid first name"
+                        } else if (isEmptyString(name)) {
+                            error = "invalid name"
+                        } else if (isEmptyString(phone)) {
+                            error = "invalid phone"
+                        }else {
+                            val userin4 = UserInformation(email, firstName, name, phone)
+
+                            val order = Order(
+                                id = ++idOrder,
+                                account = "test Account",
+                                struckName = book.nameTruck,
+                                km = book.km.toDouble(),
+                                payment = typeOfPayment,
+                                typeOfPlace = book.typeRoom,
+                                price = book.price.toDouble(),
+                                userInformation = userin4
+                            )
+
+                            dataViewModel.addData(order, collection = Collections.Order.name, document = "${++idOrder}")
+                        }
+                    }
                 )
             }
         }
