@@ -4,9 +4,9 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.tanlam.controller.collection.Collections
-import com.example.tanlam.data.Account
-import com.example.tanlam.data.Order
-import com.example.tanlam.data.Struck
+import com.example.tanlam.data.data_app.Account
+import com.example.tanlam.data.data_app.Order
+import com.example.tanlam.data.data_app.Struck
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
@@ -158,8 +158,21 @@ class DataViewModel() : ViewModel() {
             } catch (e: Exception) {
                 // Xử lý lỗi khi có vấn đề xảy ra
                 Log.e("getAllAccount", "Error getting documents: ", e)
-                listAccount(emptyList())
             }
+        }
+    }
+
+    fun deleteOrder(
+        id: String,
+    ) = CoroutineScope(Dispatchers.IO).launch{
+        val fireStoreRef = Firebase.firestore
+            .collection(Collections.Order.name)
+            .document(id)
+
+        try {
+            fireStoreRef.delete().await()
+        }catch (e: Exception) {
+            println("error")
         }
     }
 }

@@ -1,5 +1,8 @@
 package com.example.tanlam.ui.screens.main
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,36 +17,113 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.tanlam.R
-import com.example.tanlam.mapUI
+import com.example.tanlam.common.isEmptyString
+import com.example.tanlam.controller.notification.NotificationId
+import com.example.tanlam.controller.notification.showNotification
+import com.example.tanlam.controller.viewmodel.NotificationModel
+import com.example.tanlam.data.notification.Notification
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.ui.ingredients.ButtonCustom
+import com.example.tanlam.ui.ingredients.MapUI
+import com.example.tanlam.ui.ingredients.getMapLocation
+import com.example.tanlam.ui.ingredients.rememberMapViewWithLifecycle
+import com.google.android.gms.maps.MapView
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.maxkeppeker.sheets.core.models.base.rememberSheetState
+import com.maxkeppeler.sheets.calendar.CalendarDialog
+import com.maxkeppeler.sheets.calendar.models.CalendarConfig
+import com.maxkeppeler.sheets.calendar.models.CalendarSelection
 
+@RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     userName: String,
+    notificationModel: NotificationModel,
     navController: NavController
 ) {
+    var showSearchDialog by remember { mutableStateOf(false) }
+
+    var location by remember { mutableStateOf("") }
+    var destination by remember { mutableStateOf("") }
+    val mapView = rememberMapViewWithLifecycle()
+
+    //Day
+    var day by remember { mutableStateOf("") }
+    val calendarState = rememberSheetState()
+
     val context = LocalContext.current
+
+    var error by remember { mutableStateOf("") }
+    var showIncorrectDialog by remember { mutableStateOf(false) }
+
+
+    //Notification
+    var notification by remember { mutableStateOf(Notification()) }
+    val database = FirebaseDatabase.getInstance()
+    val myRef = database.getReference(NotificationId.NOTIFICATION_CHECK).child(userName)
+    myRef.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val value = snapshot.getValue(Notification::class.java)
+            if(value != null) {
+                notification = value
+            }else {
+                notification = Notification()
+            }
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            TODO("Not yet implemented")
+        }
+    })
+
+    if(notification != Notification()) {
+        notificationModel.removeNotificationForUser(userName)
+
+        showNotification(
+            context = context,
+            title = "Notification from Admin!!!!",
+            content = notification.content
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(top = 40.dp)
     ) {
-        mapUI(context = context)
+        MapUI(
+            mapView = mapView,
+            context = context
+        )
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -61,6 +141,9 @@ fun MapScreen(
                             Color.White,
                             shape = RoundedCornerShape(30.dp)
                         )
+                        .clickable {
+                            showSearchDialog = true
+                        }
                 ) {
                     Row(
                         modifier = Modifier.padding(
@@ -83,7 +166,7 @@ fun MapScreen(
                                 fontSize = 17.sp
                             )
                             Text(
-                                text = "Anywhere - Everyday - conchotanlam",
+                                text = "Anywhere - Everyday - Everytime",
                                 fontSize = 10.sp,
                                 color = Color(169, 169, 169)
                             )
@@ -116,19 +199,217 @@ fun MapScreen(
                 }
             }
 
-            ButtonCustom(
-                title = "Pick your location",
-                greenBackground = false,
+            Column {
+                ButtonCustom(
+                    title = "Select your day",
+                    greenBackground = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 30.dp),
+                    onClickButton = {
+                        calendarState.show()
+                    }
+                )
+
+                ButtonCustom(
+                    title = "Check your selection",
+                    greenBackground = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 30.dp,
+                            vertical = 20.dp
+                        ),
+                    onClickButton = {
+                        if (isEmptyString(location) || isEmptyString(destination)) {
+                            error = "invalid location"
+                            showIncorrectDialog = true
+                        } else if (isEmptyString(day)) {
+                            error = "invalid date"
+                            showIncorrectDialog = true
+                        } else {
+                            navController.navigate("${Screens.BookScreen.route}/$userName/$location/$destination/$day")
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    if (showSearchDialog) {
+        SearchPlaceDialog(
+            mapView = mapView,
+            onDismissRequest = {
+                showSearchDialog = false
+            },
+            onChangeValue = { locationText, destinationtext ->
+                location = locationText
+                destination = destinationtext
+            }
+        )
+    }
+
+    CalendarDialog(
+        state = calendarState,
+        config = CalendarConfig(
+            monthSelection = true,
+            yearSelection = true
+        ),
+        selection = CalendarSelection.Date { date ->
+            day = "$date"
+        }
+    )
+
+    if(showIncorrectDialog) {
+        InCorrectDialog(
+            error = error,
+            onDismissRequest = {
+                showIncorrectDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun SearchPlaceDialog(
+    mapView: MapView,
+    onDismissRequest: () -> Unit,
+    onChangeValue: (String, String) -> Unit
+) {
+    var location by remember { mutableStateOf("") }
+    var destination by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    Dialog(
+        onDismissRequest = {
+            onDismissRequest()
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Color.White,
+                    shape = RoundedCornerShape(20.dp)
+                )
+        ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = 30.dp,
-                        vertical = 20.dp
-                    ),
-                onClickButton = {
-                    navController.navigate(Screens.BookScreen.route)
+                    .padding(vertical = 10.dp, horizontal = 20.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Where?",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.mapicon),
+                        contentDescription = null,
+                        modifier = Modifier.size(50.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = location,
+                            onValueChange = {
+                                location = it
+                            },
+                            label = {
+                                Text(text = "Your location")
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                            ),
+                            maxLines = 1,
+                            singleLine = true,
+                        )
+
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = destination,
+                            onValueChange = {
+                                destination = it
+                            },
+                            label = {
+                                Text(text = "Your destination")
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                            ),
+                            maxLines = 1,
+                            singleLine = true,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                ButtonCustom(
+                    title = "Search",
+                    greenBackground = true,
+                    onClickButton = {
+                        onChangeValue(location, destination)
+                        onDismissRequest()
+
+                        getMapLocation(
+                            location,
+                            destination,
+                            context = context,
+                            mapView = mapView,
+                            getKm = {}
+                        )
+                    },
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun InCorrectDialog(
+    error: String,
+    onDismissRequest: () -> Unit
+) {
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+        Column(
+            modifier = Modifier
+                .background(Color.White, shape = RoundedCornerShape(20.dp))
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = error,
+                color = Color.Red,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Image(
+                painter = painterResource(id = R.drawable.incorrect),
+                contentDescription = null,
+                modifier = Modifier.size(100.dp)
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun test() {
+//    SearchPlaceDialog()
 }

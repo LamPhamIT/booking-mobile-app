@@ -1,4 +1,4 @@
-package com.example.tanlam.data
+package com.example.tanlam.data.data_app
 
 data class Account(
     val userName: String = "",

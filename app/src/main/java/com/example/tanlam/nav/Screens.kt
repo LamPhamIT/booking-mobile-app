@@ -10,4 +10,5 @@ sealed class Screens (
     object MapScreen: Screens(route = "mapScreen")
     object BookScreen: Screens(route = "bookScreen")
     object DetailScreen: Screens(route = "detail")
+    object AdminScreen: Screens(route = "admin")
 }

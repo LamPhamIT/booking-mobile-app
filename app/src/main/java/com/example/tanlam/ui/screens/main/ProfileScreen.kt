@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,16 +55,26 @@ import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.tanlam.R
 import com.example.tanlam.controller.collection.Collections
+import com.example.tanlam.controller.notification.NotificationId
+import com.example.tanlam.controller.notification.showNotification
 import com.example.tanlam.controller.viewmodel.DataViewModel
-import com.example.tanlam.data.Account
+import com.example.tanlam.controller.viewmodel.NotificationModel
+import com.example.tanlam.data.data_app.Account
+import com.example.tanlam.data.notification.Notification
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.ui.ingredients.ButtonCustom
 import com.example.tanlam.ui.ingredients.TextFieldCustom
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 @Composable
 fun ProfileScreen(
+    paddingValues: PaddingValues,
     userName: String,
     dataViewModel: DataViewModel,
+    notificationModel: NotificationModel,
     navController: NavController
 ) {
 
@@ -76,71 +87,107 @@ fun ProfileScreen(
         }
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(237, 237, 235))
-            .padding(top = 40.dp, start = 20.dp, end = 20.dp)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .height(50.dp)
-                    .width(50.dp)
-                    .shadow(12.dp, shape = RoundedCornerShape(40.dp))
-                    .background(color = Color.White)
-                    .clickable {
-                        navController.popBackStack()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_arrow_back_ios_new_24),
-                    contentDescription = null
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Profile",
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                )
+    //Notification
+    val context = LocalContext.current
+    var notification by remember { mutableStateOf(Notification()) }
+    val database = FirebaseDatabase.getInstance()
+    val myRef = database.getReference(NotificationId.NOTIFICATION_CHECK).child(userName)
+    myRef.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val value = snapshot.getValue(Notification::class.java)
+            if (value != null) {
+                notification = value
+            } else {
+                notification = Notification()
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        override fun onCancelled(error: DatabaseError) {
+            TODO("Not yet implemented")
+        }
+    })
 
+    if (notification != Notification()) {
+        notificationModel.removeNotificationForUser(userName)
+
+        showNotification(
+            context = context,
+            title = "Notification from Admin!!!!",
+            content = notification.content
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+    ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(237, 237, 235))
+                .padding(start = 20.dp, end = 20.dp, top = 10.dp)
         ) {
-            ProfileBox(
-                account = account,
-                dataViewModel = dataViewModel
-            )
-            Note()
-            ChangePass(
-                account = account,
-                dataViewModel = dataViewModel
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable {
-                    navController.navigate(Screens.LoginScreen.route)
-                }
+            Box(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Image(Icons.Default.ExitToApp, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Log out",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                Box(
+                    modifier = Modifier
+                        .height(50.dp)
+                        .width(50.dp)
+                        .shadow(12.dp, shape = RoundedCornerShape(40.dp))
+                        .background(color = Color.White)
+                        .clickable {
+                            navController.popBackStack()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_arrow_back_ios_new_24),
+                        contentDescription = null
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Profile",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                ProfileBox(
+                    account = account,
+                    dataViewModel = dataViewModel
                 )
+                Note()
+                ChangePass(
+                    account = account,
+                    dataViewModel = dataViewModel
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        navController.navigate(Screens.LoginScreen.route)
+                    }
+                ) {
+                    Image(Icons.Default.ExitToApp, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Log out",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
