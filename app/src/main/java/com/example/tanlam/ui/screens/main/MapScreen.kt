@@ -61,6 +61,8 @@ import com.maxkeppeker.sheets.core.models.base.rememberSheetState
 import com.maxkeppeler.sheets.calendar.CalendarDialog
 import com.maxkeppeler.sheets.calendar.models.CalendarConfig
 import com.maxkeppeler.sheets.calendar.models.CalendarSelection
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -256,7 +258,12 @@ fun MapScreen(
             yearSelection = true
         ),
         selection = CalendarSelection.Date { date ->
-            day = "$date"
+            if(date.isBefore(LocalDate.now())) {
+                error = "error day"
+                showIncorrectDialog = true
+            }else {
+                day = "$date"
+            }
         }
     )
 
@@ -384,11 +391,12 @@ fun SearchPlaceDialog(
 @Composable
 fun InCorrectDialog(
     error: String,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .background(Color.White, shape = RoundedCornerShape(20.dp))
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
