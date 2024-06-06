@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.tanlam.controller.collection.Collections
-import com.example.tanlam.data.Account
+import com.example.tanlam.data.data_app.Account
+import com.example.tanlam.data.data_app.Order
+import com.example.tanlam.data.data_app.Struck
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
@@ -105,6 +107,72 @@ class DataViewModel() : ViewModel() {
             }
         }.addOnFailureListener{
             callBack(false, null.toString())
+        }
+    }
+
+    //STRUCK
+    fun retrieveStruck(
+        struckId : Int,
+        data: (Struck) -> Unit,
+        onError: (Exception) -> Unit = {}
+    ) = CoroutineScope(Dispatchers.IO).launch {
+        val fireStoreRef = Firebase.firestore
+            .collection(Collections.Struck.name)
+            .document(struckId.toString())
+        try {
+            fireStoreRef.addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    onError(e)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    val data = snapshot.toObject(Struck::class.java)
+                    if (data != null) {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            data(data)
+                        }
+                    }
+                }
+            }
+        }catch (e: Exception) {
+            onError(e)
+        }
+    }
+
+
+    //ORDER
+    fun getAllOrder(listAccount: (List<Order>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val fireStoreRef = Firebase.firestore.collection(Collections.Order.name)
+
+            try {
+                val querySnapshot = fireStoreRef.get().await()
+                val listOfAccount = mutableListOf<Order>()
+
+                for (document in querySnapshot) {
+                    val order = document.toObject(Order::class.java)
+                    listOfAccount.add(order)
+                }
+
+                listAccount(listOfAccount)
+            } catch (e: Exception) {
+                // Xử lý lỗi khi có vấn đề xảy ra
+                Log.e("getAllAccount", "Error getting documents: ", e)
+            }
+        }
+    }
+
+    fun deleteOrder(
+        id: String,
+    ) = CoroutineScope(Dispatchers.IO).launch{
+        val fireStoreRef = Firebase.firestore
+            .collection(Collections.Order.name)
+            .document(id)
+
+        try {
+            fireStoreRef.delete().await()
+        }catch (e: Exception) {
+            println("error")
         }
     }
 }

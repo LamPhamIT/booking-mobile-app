@@ -32,7 +32,7 @@ import androidx.navigation.NavController
 import com.example.tanlam.R
 import com.example.tanlam.common.isEmptyString
 import com.example.tanlam.controller.viewmodel.DataViewModel
-import com.example.tanlam.data.Account
+import com.example.tanlam.data.data_app.Account
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.theme.MainGreen
 import com.example.tanlam.ui.ingredients.ButtonCustom
@@ -194,7 +194,11 @@ fun LoginDialog(
                     fontSize = 12.sp
                 )
             } else {
-                navController.navigate("${Screens.MapScreen.route}/$userName")
+                if(account.userName == "admin") {
+                    navController.navigate(Screens.AdminScreen.route)
+                }else {
+                    navController.navigate("${Screens.MapScreen.route}/$userName")
+                }
             }
         }
 

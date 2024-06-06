@@ -42,7 +42,7 @@ import com.example.tanlam.common.isValidDayOfBirth
 import com.example.tanlam.common.isValidEmail
 import com.example.tanlam.controller.collection.Collections
 import com.example.tanlam.controller.viewmodel.DataViewModel
-import com.example.tanlam.data.Account
+import com.example.tanlam.data.data_app.Account
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.theme.MainGreen
 import com.example.tanlam.ui.ingredients.ButtonCustom
@@ -86,6 +86,8 @@ fun SignupScreen(
         error = "Error day of birth"
     } else if (isEmptyString(passWord)) {
         error = "invalid password"
+    }else {
+        error = ""
     }
 
     Column(

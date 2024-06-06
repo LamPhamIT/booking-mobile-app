@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,30 +38,92 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.tanlam.R
-import com.example.tanlam.mapUI
+import com.example.tanlam.controller.notification.NotificationId
+import com.example.tanlam.controller.notification.showNotification
+import com.example.tanlam.controller.viewmodel.NotificationModel
+import com.example.tanlam.data.notification.Notification
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.theme.MainGreen
 import com.example.tanlam.ui.ingredients.ButtonCustom
+import com.example.tanlam.ui.ingredients.MapUI
+import com.example.tanlam.ui.ingredients.getMapLocation
+import com.example.tanlam.ui.ingredients.rememberMapViewWithLifecycle
+import com.google.android.gms.maps.MapView
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import kotlin.math.round
 
 @Composable
 fun BookScreen(
+    paddingValues: PaddingValues,
+    username: String,
+    location: String,
+    destination: String,
+    date: String,
+    notificationModel: NotificationModel,
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    val mapView = rememberMapViewWithLifecycle()
+    var km by remember { mutableStateOf(0.0) }
+    var totalPrice by remember { mutableStateOf(0) }
+
     val context = LocalContext.current
+
+    LaunchedEffect (Unit){ // => Chi cho cai map xuat hien 1 lan thoi -> Du co thay reset dao dien thi no van kh reset
+        getMapLocation(location, destination, context, mapView, getKm = {
+            km = it
+        })
+    }
+
+    //Notification
+    var notification by remember { mutableStateOf(Notification()) }
+    val database = FirebaseDatabase.getInstance()
+    val myRef = database.getReference(NotificationId.NOTIFICATION_CHECK).child(username)
+    myRef.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val value = snapshot.getValue(Notification::class.java)
+            if(value != null) {
+                notification = value
+            }else {
+                notification = Notification()
+            }
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            TODO("Not yet implemented")
+        }
+    })
+
+    if(notification != Notification()) {
+        notificationModel.removeNotificationForUser(username)
+
+        showNotification(
+            context = context,
+            title = "Notification from Admin!!!!",
+            content = notification.content
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(237, 237, 235)),
+            .background(Color(237, 237, 235))
+            .padding(paddingValues),
         contentAlignment = Alignment.BottomCenter
     ) {
-        mapUI(context = context)
+        MapUI(
+            mapView = mapView,
+            context = context
+        )
 
         var isShowBottomSelected by remember { mutableStateOf(true) }
-        var heightOfBottom by remember { mutableStateOf(500.dp) }
+        var heightOfBottom by remember { mutableStateOf(520.dp) }
 
         if (isShowBottomSelected) {
-            heightOfBottom = 500.dp
+            heightOfBottom = 520.dp
         } else {
             heightOfBottom = 150.dp
         }
@@ -100,32 +165,21 @@ fun BookScreen(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .height(5.dp)
-                            .width(50.dp)
-                            .background(
-                                Color.Gray,
-                                shape = RoundedCornerShape(50.dp)
-                            )
-                            .padding(10.dp)
-                            .clickable {
-                                isShowBottomSelected = !isShowBottomSelected
-                            }
+
+                IconButton(onClick = { isShowBottomSelected = !isShowBottomSelected }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_keyboard_double_arrow_down_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
+
 
                 //Time and Day
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
+                        .padding(start = 20.dp, end = 20.dp, bottom = 10.dp)
                 ) {
                     Text(
                         text = "Estimated time",
@@ -135,31 +189,36 @@ fun BookScreen(
                     )
                     Row(
                         verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.End,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 10.dp)
                     ) {
-                        Text(
-                            text = "9:50PM",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(text = "Wed, May 8, 2024")
+//                        Text(
+//                            text = "9:50PM",
+//                            fontSize = 18.sp,
+//                            fontWeight = FontWeight.Medium
+//                        )
+                        Text(text = date)
                     }
                 }
 
                 // Truck
                 var isSelectedSmallTruck by remember { mutableStateOf(true) }
+                var typeOfTruck by remember { mutableStateOf("") }
                 var colorBackGroundTruck by remember { mutableStateOf(Color(239, 249, 250)) }
                 var colorBackGroundContainer by remember { mutableStateOf(Color.White) }
 
                 if (isSelectedSmallTruck) {
                     colorBackGroundTruck = Color(239, 249, 250)
                     colorBackGroundContainer = Color.White
+                    typeOfTruck = "Small truck (1000kg - 5000kg)"
+                    totalPrice = (50000 * km).toInt()
                 } else {
                     colorBackGroundTruck = Color.White
                     colorBackGroundContainer = Color(239, 249, 250)
+                    typeOfTruck = "Large truck (5000kg - 10000kg)"
+                    totalPrice = (100000 * km).toInt()
                 }
                 Column(
                     modifier = Modifier
@@ -193,7 +252,7 @@ fun BookScreen(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = "300.000đ/5km",
+                                text = "${(km * 50000).toInt()}đ/${round(km * 10 / 10)}km",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
@@ -235,7 +294,7 @@ fun BookScreen(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = "600.000đ/5km", fontWeight = FontWeight.Bold,
+                                text = "${(km * 100000).toInt()}đ/${round(km) * 10 / 10}km", fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
                         }
@@ -243,12 +302,14 @@ fun BookScreen(
                 }
 
 
-                //Type
+                //TypeRoom
                 var isSelectedRoom by remember { mutableStateOf(true) }
                 var colorBackGroundRoom by remember { mutableStateOf(MainGreen) }
                 var colorBackGroundHome by remember { mutableStateOf(Color.White) }
                 var colorTextRoom by remember { mutableStateOf(MainGreen) }
                 var colorTextHome by remember { mutableStateOf(Color.White) }
+
+                var typeOfPlace by remember { mutableStateOf("") }
 
                 if (isSelectedRoom) {
                     colorBackGroundRoom = MainGreen
@@ -256,12 +317,16 @@ fun BookScreen(
 
                     colorTextRoom = Color.White
                     colorTextHome = Color(106, 100, 100)
+
+                    typeOfPlace = "Room"
                 } else {
                     colorBackGroundRoom = Color.White
                     colorBackGroundHome = MainGreen
 
                     colorTextRoom = Color(106, 100, 100)
                     colorTextHome = Color.White
+
+                    typeOfPlace = "Entire home"
                 }
 
                 Column(
@@ -329,7 +394,7 @@ fun BookScreen(
                         title = "Book",
                         greenBackground = true,
                         onClickButton = {
-                            navController.navigate(Screens.DetailScreen.route)
+                            navController.navigate("${Screens.DetailScreen.route}/$username/$typeOfTruck/$totalPrice/$typeOfPlace/$km/$location/$destination/$date")
                         },
                         modifier = Modifier.fillMaxWidth()
                     )

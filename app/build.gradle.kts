@@ -2,9 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id ("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
-//    id ("dagger.hilt.android.plugin")
     id ("kotlin-kapt")
     alias(libs.plugins.google.gms.google.services)
+
+    id("kotlin-parcelize")
+
+    //Type-safe navigation
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -109,4 +113,24 @@ dependencies {
     implementation ("androidx.compose.material:material:x.y.z")
 
     implementation ("io.coil-kt:coil-compose:1.3.2")
+
+    //Caledar
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:core:1.0.2")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:calendar:1.0.2")
+    implementation ("com.maxkeppeler.sheets-compose-dialogs:clock:1.0.2")
+
+
+    //Safe- navigation
+    implementation(libs.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    //Notification
+    implementation ("androidx.core:core-ktx:1.7.0")
+    implementation ("androidx.compose.ui:ui-tooling-preview:1.1.0")
+    implementation ("androidx.compose.runtime:runtime-livedata:1.1.0")
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.4.0")
+
+    //zaloPay
+//    implementation("com.squareup.okhttp3:okhttp:4.6.0")
+//    implementation("commons-codec:commons-codec:1.14")
 }
