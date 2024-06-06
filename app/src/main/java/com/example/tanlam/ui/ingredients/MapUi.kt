@@ -20,6 +20,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,23 +36,37 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.tanlam.R
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.ktx.awaitMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.util.Locale
 
 
 @Composable
 fun MapUI(
     mapView: MapView,
     context: Context,
-    modifier: Modifier = Modifier
+    clickToFindAddress: Boolean,
+    getAddressWhenClick:(String) -> Unit
 ) {
+    var googleMap by remember { mutableStateOf<GoogleMap?>(null) }
+    var markerPosition by remember { mutableStateOf<LatLng?>(null) }
+    var markerTitle by remember { mutableStateOf<String>("") }
+
+    val geocoder = Geocoder(context, Locale.getDefault())
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,43 +77,52 @@ fun MapUI(
                 val map = mapView.awaitMap()
                 map.uiSettings.isZoomControlsEnabled = true
             }
+
+            if(clickToFindAddress) {
+                mapView.getMapAsync {map ->
+                    googleMap = map
+                    map.uiSettings.isZoomControlsEnabled = true
+
+                    val VietNam = LatLng(21.028511, 105.804817)
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(VietNam, 10f))
+
+                    map.setOnMapClickListener { latLng ->
+                        markerPosition = latLng
+
+                        coroutineScope.launch {
+                            val address = getAddressFromLatLng(geocoder, latLng)
+                            markerTitle = address ?: "No address found"
+
+                            googleMap?.clear()
+                            googleMap?.addMarker(
+                                MarkerOptions().position(latLng).title(markerTitle)
+                            )
+                        }
+                    }
+                }
+
+                getAddressWhenClick(markerTitle)
+            }
         }
     }
 }
 
-//fun getDistance(mapView: MapView, context: Context) {
-//    mapView.getMapAsync {
-//        val Sydney = LatLng(-34.0, 151.0)
-//        val Brisbane = LatLng(-27.470125, 153.021072)
-//
-//        val locationA: Location = Location("Sydney")
-//        locationA.latitude = Sydney.latitude
-//        locationA.longitude = Sydney.longitude
-//
-//        val locationB: Location = Location("Brisbane")
-//        locationB.latitude = Brisbane.latitude
-//        locationB.longitude = Brisbane.longitude
-//
-//        var distance: Float = locationA.distanceTo(locationB)
-//        distance /= 1000
-//
-//        Toast.makeText(
-//            context,
-//            "Distance between Sydney and Brisbane is : " + distance + "km",
-//            Toast.LENGTH_SHORT
-//        ).show()
-//
-//        val locationArrayList: ArrayList<LatLng?> = ArrayList()
-//        locationArrayList.add(Sydney)
-//        locationArrayList.add(Brisbane)
-//
-//        for (i in locationArrayList.indices) {
-//            it.addMarker(MarkerOptions().position(locationArrayList[i]!!).title("Marker"))
-//            it.animateCamera(CameraUpdateFactory.zoomTo(18.0f))
-//            it.moveCamera(CameraUpdateFactory.newLatLng(locationArrayList[i]!!))
-//        }
-//    }
-//}
+suspend fun getAddressFromLatLng(geocoder: Geocoder, latLng: LatLng): String? {
+    return withContext(Dispatchers.IO) {
+        try {
+            val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+            if (addresses?.isNotEmpty() == true) {
+                val address = addresses[0]
+                address.getAddressLine(0)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+}
 
 fun getMapLocation(
     location1: String,
@@ -157,6 +181,8 @@ fun getMapLocation(
         }
     }
 }
+
+
 
 @Composable
 fun rememberMapViewWithLifecycle(): MapView {

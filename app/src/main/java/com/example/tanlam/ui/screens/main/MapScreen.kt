@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,7 +63,6 @@ import com.maxkeppeler.sheets.calendar.CalendarDialog
 import com.maxkeppeler.sheets.calendar.models.CalendarConfig
 import com.maxkeppeler.sheets.calendar.models.CalendarSelection
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,6 +117,11 @@ fun MapScreen(
         )
     }
 
+    //Map
+    var isFindMapByClick by remember { mutableStateOf(false) }
+    var addressAfterFind by remember { mutableStateOf("") }
+    var location_or_destination by remember { mutableStateOf(0) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -124,7 +129,11 @@ fun MapScreen(
     ) {
         MapUI(
             mapView = mapView,
-            context = context
+            context = context,
+            clickToFindAddress = isFindMapByClick,
+            getAddressWhenClick = {
+                addressAfterFind = it
+            }
         )
 
         Column(
@@ -132,72 +141,122 @@ fun MapScreen(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(10.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(9f)
-                        .background(
-                            Color.White,
-                            shape = RoundedCornerShape(30.dp)
-                        )
-                        .clickable {
-                            showSearchDialog = true
-                        }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(
-                            top = 10.dp,
-                            end = 10.dp,
-                            bottom = 10.dp,
-                            start = 20.dp
-                        ),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .weight(9f)
+                            .background(
+                                Color.White,
+                                shape = RoundedCornerShape(30.dp)
+                            )
+                            .clickable {
+                                showSearchDialog = true
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(
+                                top = 10.dp,
+                                end = 10.dp,
+                                bottom = 10.dp,
+                                start = 20.dp
+                            ),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.search_icon),
+                                contentDescription = null,
+                                modifier = Modifier.size(30.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Where to?",
+                                    fontSize = 17.sp
+                                )
+                                Text(
+                                    text = "Anywhere - Everyday - Everytime",
+                                    fontSize = 10.sp,
+                                    color = Color(169, 169, 169)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Color.White,
+                                shape = RoundedCornerShape(50.dp)
+                            )
+                            .height(50.dp)
+                            .width(50.dp)
+                            .clickable {
+                                navController.navigate("${Screens.ProfileScreen.route}/$userName")
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.search_icon),
+                            Icons.Default.AccountCircle,
                             contentDescription = null,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .size(30.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Where to?",
-                                fontSize = 17.sp
-                            )
-                            Text(
-                                text = "Anywhere - Everyday - Everytime",
-                                fontSize = 10.sp,
-                                color = Color(169, 169, 169)
-                            )
-                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Box(
-                    modifier = Modifier
-                        .background(
-                            Color.White,
-                            shape = RoundedCornerShape(50.dp)
-                        )
-                        .height(50.dp)
-                        .width(50.dp)
-                        .clickable {
-                            navController.navigate("${Screens.ProfileScreen.route}/$userName")
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.AccountCircle,
-                        contentDescription = null,
+                if (isFindMapByClick) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
                         modifier = Modifier
-                            .padding(10.dp)
-                            .size(30.dp)
-                    )
+                            .background(
+                                Color.White,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = addressAfterFind,
+                                modifier = Modifier.weight(8f),
+                                maxLines = 1
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(0.1f)
+                                    .background(Color.Gray)
+                            )
+                            TextButton(
+                                onClick = {
+                                    showSearchDialog = true
+                                    if(location_or_destination == 1) {
+                                        location = addressAfterFind
+                                    }else if(location_or_destination == 2) {
+                                        destination = addressAfterFind
+                                    }
+                                },
+                                modifier = Modifier.weight(2f)
+                            ) {
+                                Text(
+                                    text = "OK",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -243,11 +302,20 @@ fun MapScreen(
             mapView = mapView,
             onDismissRequest = {
                 showSearchDialog = false
+
+                if(it != 0) {
+                    isFindMapByClick = true
+                    location_or_destination = it
+                }else {
+                    isFindMapByClick = false
+                }
             },
-            onChangeValue = { locationText, destinationtext ->
+            onChangeValue = { locationText, destinationText ->
                 location = locationText
-                destination = destinationtext
-            }
+                destination = destinationText
+            },
+            location = location,
+            destination = destination
         )
     }
 
@@ -280,16 +348,18 @@ fun MapScreen(
 @Composable
 fun SearchPlaceDialog(
     mapView: MapView,
-    onDismissRequest: () -> Unit,
+    location: String,
+    destination: String,
+    onDismissRequest: (Int) -> Unit,
     onChangeValue: (String, String) -> Unit
 ) {
-    var location by remember { mutableStateOf("") }
-    var destination by remember { mutableStateOf("") }
+    var locationTest by remember { mutableStateOf(location) }
+    var destinationTest by remember { mutableStateOf(destination) }
     val context = LocalContext.current
 
     Dialog(
         onDismissRequest = {
-            onDismissRequest()
+            onDismissRequest(0)
         }
     ) {
         Column(
@@ -321,46 +391,62 @@ fun SearchPlaceDialog(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.mapicon),
-                        contentDescription = null,
-                        modifier = Modifier.size(50.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
                     Column {
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = location,
-                            onValueChange = {
-                                location = it
-                            },
-                            label = {
-                                Text(text = "Your location")
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Text,
-                            ),
-                            maxLines = 1,
-                            singleLine = true,
-                        )
+                        Row {
+                            OutlinedTextField(
+                                modifier = Modifier.weight(7f),
+                                value = locationTest,
+                                onValueChange = {
+                                    locationTest = it
+                                },
+                                label = {
+                                    Text(text = "Your location")
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text,
+                                ),
+                                maxLines = 1,
+                                singleLine = true,
+                            )
 
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = destination,
-                            onValueChange = {
-                                destination = it
-                            },
-                            label = {
-                                Text(text = "Your destination")
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Text,
-                            ),
-                            maxLines = 1,
-                            singleLine = true,
-                        )
+                            TextButton(
+                                onClick = {
+                                    onDismissRequest(1)
+                                },
+                                modifier = Modifier.weight(3f)
+                            ) {
+                                Text(text = "select")
+                            }
+                        }
+
+                        Row (
+                            verticalAlignment = Alignment.CenterVertically
+                        ){
+                            OutlinedTextField(
+                                modifier = Modifier.weight(7f),
+                                value = destinationTest,
+                                onValueChange = {
+                                    destinationTest = it
+                                },
+                                label = {
+                                    Text(text = "Your destination")
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text,
+                                ),
+                                maxLines = 1,
+                                singleLine = true,
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    onDismissRequest(2)
+                                },
+                                modifier = Modifier.weight(3f)
+                            ) {
+                                Text(text = "select")
+                            }
+                        }
                     }
                 }
 
@@ -370,12 +456,12 @@ fun SearchPlaceDialog(
                     title = "Search",
                     greenBackground = true,
                     onClickButton = {
-                        onChangeValue(location, destination)
-                        onDismissRequest()
+                        onChangeValue(locationTest, destinationTest)
+                        onDismissRequest(0)
 
                         getMapLocation(
-                            location,
-                            destination,
+                            locationTest,
+                            destinationTest,
                             context = context,
                             mapView = mapView,
                             getKm = {}

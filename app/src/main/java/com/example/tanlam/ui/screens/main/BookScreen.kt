@@ -116,7 +116,9 @@ fun BookScreen(
     ) {
         MapUI(
             mapView = mapView,
-            context = context
+            context = context,
+            clickToFindAddress = false,
+            getAddressWhenClick = {}
         )
 
         var isShowBottomSelected by remember { mutableStateOf(true) }
