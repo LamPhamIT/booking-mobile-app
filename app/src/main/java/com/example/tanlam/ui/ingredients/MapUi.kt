@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LiveData
 import com.example.tanlam.R
+import com.example.tanlam.ShareLiveDataModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -58,7 +60,7 @@ fun MapUI(
     mapView: MapView,
     context: Context,
     clickToFindAddress: Boolean,
-    getAddressWhenClick:(String) -> Unit
+    shareLiveDataModel: ShareLiveDataModel
 ) {
     var googleMap by remember { mutableStateOf<GoogleMap?>(null) }
     var markerPosition by remember { mutableStateOf<LatLng?>(null) }
@@ -78,13 +80,14 @@ fun MapUI(
                 map.uiSettings.isZoomControlsEnabled = true
             }
 
+            mapView.getMapAsync {map ->
+                val VietNam = LatLng(21.028511, 105.804817)
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(VietNam, 10f))
+            }
             if(clickToFindAddress) {
                 mapView.getMapAsync {map ->
                     googleMap = map
                     map.uiSettings.isZoomControlsEnabled = true
-
-                    val VietNam = LatLng(21.028511, 105.804817)
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(VietNam, 10f))
 
                     map.setOnMapClickListener { latLng ->
                         markerPosition = latLng
@@ -97,11 +100,11 @@ fun MapUI(
                             googleMap?.addMarker(
                                 MarkerOptions().position(latLng).title(markerTitle)
                             )
+
+                            shareLiveDataModel.updateLiveData(markerTitle)
                         }
                     }
                 }
-
-                getAddressWhenClick(markerTitle)
             }
         }
     }

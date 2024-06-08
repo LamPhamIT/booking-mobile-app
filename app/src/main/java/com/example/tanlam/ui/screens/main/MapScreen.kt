@@ -26,7 +26,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,8 +43,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.tanlam.R
+import com.example.tanlam.ShareLiveDataModel
 import com.example.tanlam.common.isEmptyString
 import com.example.tanlam.controller.notification.NotificationId
 import com.example.tanlam.controller.notification.showNotification
@@ -70,7 +74,8 @@ import java.time.LocalDate
 fun MapScreen(
     userName: String,
     notificationModel: NotificationModel,
-    navController: NavController
+    navController: NavController,
+    shareLiveDataModel: ShareLiveDataModel = viewModel()
 ) {
     var showSearchDialog by remember { mutableStateOf(false) }
 
@@ -119,8 +124,10 @@ fun MapScreen(
 
     //Map
     var isFindMapByClick by remember { mutableStateOf(false) }
-    var addressAfterFind by remember { mutableStateOf("") }
     var location_or_destination by remember { mutableStateOf(0) }
+
+    val addressAfterFind by shareLiveDataModel.inputData.observeAsState(initial = "")
+
 
     Box(
         modifier = Modifier
@@ -131,9 +138,7 @@ fun MapScreen(
             mapView = mapView,
             context = context,
             clickToFindAddress = isFindMapByClick,
-            getAddressWhenClick = {
-                addressAfterFind = it
-            }
+            shareLiveDataModel = shareLiveDataModel
         )
 
         Column(
@@ -240,12 +245,12 @@ fun MapScreen(
                             )
                             TextButton(
                                 onClick = {
-                                    showSearchDialog = true
                                     if(location_or_destination == 1) {
                                         location = addressAfterFind
                                     }else if(location_or_destination == 2) {
                                         destination = addressAfterFind
                                     }
+                                    showSearchDialog = true
                                 },
                                 modifier = Modifier.weight(2f)
                             ) {
@@ -392,7 +397,9 @@ fun SearchPlaceDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Row {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             OutlinedTextField(
                                 modifier = Modifier.weight(7f),
                                 value = locationTest,

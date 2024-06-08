@@ -36,8 +36,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.tanlam.R
+import com.example.tanlam.ShareLiveDataModel
 import com.example.tanlam.controller.notification.NotificationId
 import com.example.tanlam.controller.notification.showNotification
 import com.example.tanlam.controller.viewmodel.NotificationModel
@@ -64,7 +66,8 @@ fun BookScreen(
     date: String,
     notificationModel: NotificationModel,
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    shareLiveDataModel: ShareLiveDataModel = viewModel()
 ) {
     val mapView = rememberMapViewWithLifecycle()
     var km by remember { mutableStateOf(0.0) }
@@ -118,7 +121,7 @@ fun BookScreen(
             mapView = mapView,
             context = context,
             clickToFindAddress = false,
-            getAddressWhenClick = {}
+            shareLiveDataModel = shareLiveDataModel
         )
 
         var isShowBottomSelected by remember { mutableStateOf(true) }
