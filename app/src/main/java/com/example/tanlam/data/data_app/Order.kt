@@ -4,6 +4,7 @@ import com.example.tanlam.data.UserInformation
 
 data class Order(
     val id: Int = 0,
+    val date: String = "",
     val account: String = "",
     val struckName: String = "",
     val location: String = "",

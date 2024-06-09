@@ -57,7 +57,9 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.math.round
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -440,6 +442,7 @@ fun DetailScreen(
 
                             val order = Order(
                                 id = ++idOrder,
+                                date = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")),
                                 account = book.username,
                                 location = book.location,
                                 destination = book.destination,

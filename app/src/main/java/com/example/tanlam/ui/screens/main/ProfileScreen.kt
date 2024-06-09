@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +62,7 @@ import com.example.tanlam.controller.notification.showNotification
 import com.example.tanlam.controller.viewmodel.DataViewModel
 import com.example.tanlam.controller.viewmodel.NotificationModel
 import com.example.tanlam.data.data_app.Account
+import com.example.tanlam.data.data_app.Order
 import com.example.tanlam.data.notification.Notification
 import com.example.tanlam.nav.Screens
 import com.example.tanlam.ui.ingredients.ButtonCustom
@@ -117,6 +120,24 @@ fun ProfileScreen(
         )
     }
 
+    //Order
+    var listOrder by remember { mutableStateOf(emptyList<Order>()) }
+    var listOrderNotConfirm by remember { mutableStateOf(emptyList<Order>()) }
+    var listOrderHadBeenConfirmed by remember { mutableStateOf(emptyList<Order>()) }
+
+    dataViewModel.getAllOrder {
+        listOrder = it
+    }
+
+
+    for (i in listOrder) {
+        if (i.isConfirm == null) {
+            listOrderNotConfirm += i
+        } else {
+            listOrderHadBeenConfirmed += i
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -129,7 +150,8 @@ fun ProfileScreen(
                 .padding(start = 20.dp, end = 20.dp, top = 10.dp)
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
                 Box(
                     modifier = Modifier
@@ -161,34 +183,53 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                ProfileBox(
-                    account = account,
-                    dataViewModel = dataViewModel
-                )
-                Note()
-                ChangePass(
-                    account = account,
-                    dataViewModel = dataViewModel
-                )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable {
-                        navController.navigate(Screens.LoginScreen.route)
-                    }
-                ) {
-                    Image(Icons.Default.ExitToApp, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Log out",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                item {
+                    ProfileBox(
+                        account = account,
+                        dataViewModel = dataViewModel
                     )
                 }
+
+                item {
+                    Note()
+                }
+
+                item {
+                    WaitingConfirm(
+                        list = listOrder,
+                        dataViewModel = dataViewModel
+                    )
+                }
+
+                item {
+                    ChangePass(
+                        account = account,
+                        dataViewModel = dataViewModel
+                    )
+                }
+
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable {
+                            navController.navigate(Screens.LoginScreen.route)
+                        }
+                    ) {
+                        Image(Icons.Default.ExitToApp, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Log out",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
@@ -347,6 +388,129 @@ fun Note(modifier: Modifier = Modifier) {
             painter = painterResource(id = R.drawable.startimage),
             contentDescription = null,
             modifier = Modifier.weight(4f)
+        )
+    }
+}
+
+@Composable
+fun WaitingConfirm(
+    list: List<Order>,
+    dataViewModel: DataViewModel,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .shadow(15.dp, shape = RoundedCornerShape(20.dp))
+            .background(Color.White)
+            .padding(horizontal = 40.dp, vertical = 10.dp)
+            .height(200.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column() {
+            Text(
+                text = "Waiting for confirm",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(3f)
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            if (list.size == 0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(7f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.no_order),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(140.dp)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(7f)
+                ) {
+                    items(list.size) { index ->
+                        WaitingItem(
+                            order = list[index],
+                            onClickCancel = {
+                                dataViewModel.deleteOrder(list[index].id.toString())
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WaitingItem(
+    order: Order,
+    onClickCancel: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp)
+        ) {
+            Column(
+                modifier = Modifier.weight(8f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Date: ",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = order.date,
+                        maxLines = 1
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Price: ",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "${order.price.toInt()}vnd",
+                        maxLines = 1
+                    )
+                }
+            }
+
+            TextButton(
+                onClick = {
+                    onClickCancel()
+                },
+                modifier = Modifier.weight(3f)
+            ) {
+                Text(
+                    text = "Cancel",
+                    color = Color(158, 17, 17, 255)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.2.dp)
+                .background(Color(83, 77, 77, 255))
+                .padding(horizontal = 20.dp)
         )
     }
 }
